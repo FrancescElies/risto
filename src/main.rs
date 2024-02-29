@@ -17,12 +17,12 @@ enum Like {
 }
 
 fn did_you_like_it() -> Like {
-    print!("like it? yes(y), no(n), repeat(r): ");
+    print!("٭ Like it? yes(y)/love(l), no(n)/hate(h), repeat(r): ");
     io::stdout().flush().unwrap(); // Ensure the prompt is displayed
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
     match input.trim() {
-        "y" | "Y" => Like::Yes,
+        "y" | "Y" | "l" | "L" => Like::Yes,
         "r" | "R" => Like::Repeat,
         _ => Like::No,
     }
@@ -64,16 +64,17 @@ fn play(path: &Path) -> Like {
             match rx_stop_song.recv_timeout(Duration::from_secs(5)) {
                 Ok(_) => {
                     // on user input
+                    println!("user said something");
                     sink.stop();
                     return;
                 }
                 Err(_e) => {
-                    sink.stop();
                     // println!("error rx {_e:#?}");
                 }
             }
         }
 
+        println!("song end");
         sink.stop();
     });
 
@@ -95,17 +96,21 @@ fn play(path: &Path) -> Like {
 }
 
 fn main() {
-    for file in mp3_files("/Users/cesc/Music") {
+    for file in mp3_files("/home/cesc/Music") {
         println!("playing {file:?}");
         loop {
             match play(&file) {
                 Like::Yes => {
+                    println!("❤️ {file:?}");
                     break;
                 }
                 Like::No => {
+                    println!("👻 {file:?}");
                     break;
                 }
-                Like::Repeat => {}
+                Like::Repeat => {
+                    println!("⥁ {file:?}");
+                }
             }
         }
     }
