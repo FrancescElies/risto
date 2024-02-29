@@ -1,7 +1,6 @@
-use rodio::{Decoder, OutputStream, Sink, Source};
+use rodio::{Decoder, OutputStream, Sink};
 use std::io::{self, Write};
 use std::sync::mpsc::channel;
-// use std::time::Duration;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -10,7 +9,7 @@ use std::thread;
 use std::time::Duration;
 use walkdir::WalkDir;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Like {
     Yes,
     No,
@@ -18,7 +17,7 @@ enum Like {
 }
 
 fn did_you_like_it() -> Like {
-    print!("like it? (y/n): ");
+    print!("like it? yes(y), no(n), repeat(r): ");
     io::stdout().flush().unwrap(); // Ensure the prompt is displayed
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
@@ -45,39 +44,31 @@ fn mp3_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
         .collect()
 }
 
-fn play(path: PathBuf) {
+fn play(path: &Path) -> Like {
     // Create an output stream
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let sink = Sink::try_new(&stream_handle).unwrap();
 
-    let (tx_like, rx_input) = channel();
-    let file = File::open(path.clone()).unwrap();
+    let (tx_like, rx_like) = channel();
+    let (tx_stop_song, rx_stop_song) = channel();
+
+    let file = File::open(path).unwrap();
     let th_player = thread::spawn(move || {
         // Play the MP3 file
         let source = Decoder::new(BufReader::new(file)).unwrap();
         // let source = source.take_duration(Duration::from_secs(5));
         sink.append(source);
 
-        loop {
-            match rx_input.recv_timeout(Duration::from_secs(5)) {
-                Ok(liked) => {
-                    match liked {
-                        Like::Yes => {
-                            println!("liked")
-                        }
-                        Like::No => {
-                            println!("didn't like")
-                        }
-                        Like::Repeat => {
-                            println!("recived repeat");
-                            sink.stop();
-                            play(path);
-                            return;
-                        }
-                    }
-                    break;
+        // while song playing
+        while sink.len() != 0 {
+            match rx_stop_song.recv_timeout(Duration::from_secs(5)) {
+                Ok(_) => {
+                    // on user input
+                    sink.stop();
+                    return;
                 }
                 Err(_e) => {
+                    sink.stop();
                     // println!("error rx {_e:#?}");
                 }
             }
@@ -86,27 +77,36 @@ fn play(path: PathBuf) {
         sink.stop();
     });
 
-    let th_ipnut_reader = thread::spawn(move || match did_you_like_it() {
-        x @ Like::Yes => {
-            println!("send {x:?}");
-            tx_like.send(x).unwrap();
-        }
-        x @ Like::No => {
-            println!("send {x:?}");
-            tx_like.send(x).unwrap();
-        }
-        x @ Like::Repeat => {
-            println!("send {x:?}");
-            tx_like.send(x).unwrap();
-        }
+    let th_ipnut_reader = thread::spawn(move || {
+        let like = did_you_like_it();
+        tx_like.send(like).unwrap();
+        tx_stop_song.send(true).unwrap();
     });
+
+    let like = match rx_like.recv() {
+        Ok(x) => x,
+        Err(_) => Like::Repeat,
+    };
 
     th_ipnut_reader.join().expect("player thread panicked!");
     th_player.join().expect("player thread panicked!");
+
+    like
 }
 
 fn main() {
     for file in mp3_files("/Users/cesc/Music") {
-        play(file);
+        println!("playing {file:?}");
+        loop {
+            match play(&file) {
+                Like::Yes => {
+                    break;
+                }
+                Like::No => {
+                    break;
+                }
+                Like::Repeat => {}
+            }
+        }
     }
 }
