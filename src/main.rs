@@ -89,7 +89,6 @@ fn play(path: &Path) -> Like {
             match rx_stop_song.recv_timeout(Duration::from_secs(5)) {
                 Ok(_) => {
                     // on user input
-                    println!("user said something");
                     sink.stop();
                     return;
                 }
@@ -99,7 +98,6 @@ fn play(path: &Path) -> Like {
             }
         }
 
-        println!("song end");
         sink.stop();
     });
 
@@ -129,14 +127,16 @@ fn main() -> Result<()> {
     let mut songs = load_likes(likes_path)?;
     let already_listened_longs: HashSet<String> = songs.iter().map(|x| x.path.clone()).collect();
     for file in mp3_files(music_dr).iter().filter(|x| {
-        let result = !already_listened_longs.contains(x.to_str().unwrap_or(""));
-        println!("result {result}");
-        result
+        let keep = !already_listened_longs.contains(x.to_str().unwrap_or(""));
+        if !keep {
+            println!("👣 skipping {x:?}");
+        }
+        keep
     }) {
-        println!("playing {file:?}");
+        println!("▶️ playing {file:?}");
         let mut like;
         loop {
-            like = play(&file);
+            like = play(file);
             match like {
                 Like::Yes => {
                     println!("❤️ {file:?}");
@@ -168,16 +168,12 @@ fn main() -> Result<()> {
 }
 
 fn load_likes(path: &Path) -> Result<Vec<Song>> {
-    let file = match File::open(path) {
-        Ok(x) => x,
-        Err(_) => {
-            let mut f = File::create(path).with_context(|| format!("failed to create {path:?}"))?;
-            let _ = f.write(b"[]");
-            f
-        }
+    if !path.exists() {
+        let mut f = File::create(path).with_context(|| format!("failed to create {path:?}"))?;
+        let _ = f.write(b"[]");
     };
+    let file = File::open(path).with_context(|| format!("couldn't load {path:?}"))?;
     let reader = BufReader::new(file);
     let files = serde_json::from_reader(reader)?;
-    println!("{files:?}");
     Ok(files)
 }
