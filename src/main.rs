@@ -12,7 +12,17 @@ use std::{
 };
 use walkdir::WalkDir;
 
-static MUSIC_PATH: &str = "/home/cesc/Music";
+use clap::Parser;
+
+/// Classify music stop at any time and continue later on.
+///
+/// Saves results to likes.json, later on you can process the json e.g. remove files you didn't like.
+#[derive(Parser)]
+struct Cli {
+    /// Path to your music folder
+    music_dir: PathBuf,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct Songs(Vec<Song>);
 
@@ -111,12 +121,14 @@ fn play(path: &Path) -> Like {
 }
 
 fn main() -> Result<()> {
-    let likes_path = Path::new("likes.txt");
+    let args = Cli::parse();
+
+    let music_dr = args.music_dir;
+
+    let likes_path = Path::new("likes.json");
     let mut songs = load_likes(likes_path)?;
     let already_listened_longs: HashSet<String> = songs.iter().map(|x| x.path.clone()).collect();
-    println!("{songs:#?}");
-    println!("{already_listened_longs:#?}");
-    for file in mp3_files(MUSIC_PATH).iter().filter(|x| {
+    for file in mp3_files(music_dr).iter().filter(|x| {
         let result = !already_listened_longs.contains(x.to_str().unwrap_or(""));
         println!("result {result}");
         result
