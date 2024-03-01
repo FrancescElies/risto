@@ -40,7 +40,7 @@ enum Like {
 }
 
 fn did_you_like_it() -> Result<Like> {
-    print!("٭ Like it? yes(y)/love(l), no(n)/hate(h), repeat(r): ");
+    print!("  Like it? yes(y)/love(l), no(n)/hate(h), repeat(r): ");
     io::stdout()
         .flush()
         .with_context(|| "couldn't flush stdout")?; // Ensure the prompt is displayed
@@ -134,7 +134,7 @@ fn main() -> Result<()> {
         }
         keep
     }) {
-        println!("▶️ playing {file:?}");
+        println!("▶️  playing {file:?}");
         let mut like;
         loop {
             like = play(file);
