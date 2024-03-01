@@ -1,31 +1,43 @@
+use anyhow::{Context, Result};
 use rodio::{Decoder, OutputStream, Sink};
-use std::io::{self, Write};
-use std::sync::mpsc::channel;
-
-use std::fs::File;
-use std::io::BufReader;
-use std::path::{Path, PathBuf};
-use std::thread;
-use std::time::Duration;
+use serde::{Deserialize, Serialize};
+use std::{
+    fs::File,
+    io::{self, BufReader, Write},
+    path::{Path, PathBuf},
+    sync::mpsc::channel,
+    thread,
+    time::Duration,
+};
 use walkdir::WalkDir;
 
-#[derive(Debug, Clone)]
+static MUSIC_PATH: &str = "/home/cesc/Music";
+
+#[derive(Serialize, Deserialize)]
+struct Song {
+    path: String,
+    like: Like,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 enum Like {
     Yes,
     No,
-    Repeat,
+    DontKnow,
 }
 
-fn did_you_like_it() -> Like {
+fn did_you_like_it() -> Result<Like> {
     print!("٭ Like it? yes(y)/love(l), no(n)/hate(h), repeat(r): ");
-    io::stdout().flush().unwrap(); // Ensure the prompt is displayed
+    io::stdout()
+        .flush()
+        .with_context(|| "couldn't flush stdout")?; // Ensure the prompt is displayed
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    match input.trim() {
+    Ok(match input.trim() {
         "y" | "Y" | "l" | "L" => Like::Yes,
-        "r" | "R" => Like::Repeat,
-        _ => Like::No,
-    }
+        "n" | "N" => Like::No,
+        _ => Like::DontKnow,
+    })
 }
 
 fn mp3_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
@@ -79,14 +91,14 @@ fn play(path: &Path) -> Like {
     });
 
     let th_ipnut_reader = thread::spawn(move || {
-        let like = did_you_like_it();
+        let like = did_you_like_it().unwrap_or(Like::DontKnow);
         tx_like.send(like).unwrap();
         tx_stop_song.send(true).unwrap();
     });
 
     let like = match rx_like.recv() {
         Ok(x) => x,
-        Err(_) => Like::Repeat,
+        Err(_) => Like::DontKnow,
     };
 
     th_ipnut_reader.join().expect("player thread panicked!");
@@ -95,8 +107,9 @@ fn play(path: &Path) -> Like {
     like
 }
 
-fn main() {
-    for file in mp3_files("/home/cesc/Music") {
+fn main() -> Result<()> {
+    // load_likes(Path::new("likes.txt"))?;
+    for file in mp3_files(MUSIC_PATH) {
         println!("playing {file:?}");
         loop {
             match play(&file) {
@@ -108,10 +121,21 @@ fn main() {
                     println!("👻 {file:?}");
                     break;
                 }
-                Like::Repeat => {
+                Like::DontKnow => {
                     println!("⥁ {file:?}");
                 }
             }
         }
     }
+    Ok(())
+}
+
+fn load_likes(path: &Path) -> Result<Vec<Song>> {
+    let file = match File::open(path) {
+        Ok(x) => x,
+        Err(_) => File::create(path).with_context(|| format!("failed to create {path:?}"))?,
+    };
+    let reader = BufReader::new(file);
+    let files: Vec<Song> = serde_json::from_reader(reader)?;
+    Ok(files)
 }
