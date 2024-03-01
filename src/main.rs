@@ -103,8 +103,9 @@ fn play(path: &Path) -> Like {
 
     let th_ipnut_reader = thread::spawn(move || {
         let like = did_you_like_it().unwrap_or(Like::DontKnow);
-        tx_like.send(like).unwrap();
-        tx_stop_song.send(true).unwrap();
+        // don't care if send fails
+        let _ = tx_like.send(like);
+        let _ = tx_stop_song.send(true);
     });
 
     let like = match rx_like.recv() {
