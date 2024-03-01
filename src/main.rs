@@ -80,7 +80,11 @@ fn play(path: &Path) -> Like {
     let file = File::open(path).unwrap();
     let th_player = thread::spawn(move || {
         // Play the MP3 file
-        let source = Decoder::new(BufReader::new(file)).unwrap();
+        let source = if let Ok(x) = Decoder::new(BufReader::new(file)) {
+            x
+        } else {
+            return;
+        };
         // let source = source.take_duration(Duration::from_secs(5));
         sink.append(source);
 
