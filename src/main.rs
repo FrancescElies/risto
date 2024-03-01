@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::HashSet,
     fs::File,
     io::{self, BufReader, Write},
     path::{Path, PathBuf},
@@ -12,8 +13,10 @@ use std::{
 use walkdir::WalkDir;
 
 static MUSIC_PATH: &str = "/home/cesc/Music";
+#[derive(Debug, Serialize, Deserialize)]
+struct Songs(Vec<Song>);
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Song {
     path: String,
     like: Like,
@@ -108,24 +111,46 @@ fn play(path: &Path) -> Like {
 }
 
 fn main() -> Result<()> {
-    // load_likes(Path::new("likes.txt"))?;
-    for file in mp3_files(MUSIC_PATH) {
+    let likes_path = Path::new("likes.txt");
+    let mut songs = load_likes(likes_path)?;
+    let already_listened_longs: HashSet<String> = songs.iter().map(|x| x.path.clone()).collect();
+    println!("{songs:#?}");
+    println!("{already_listened_longs:#?}");
+    for file in mp3_files(MUSIC_PATH).iter().filter(|x| {
+        let result = !already_listened_longs.contains(x.to_str().unwrap_or(""));
+        println!("result {result}");
+        result
+    }) {
         println!("playing {file:?}");
+        let mut like;
         loop {
-            match play(&file) {
+            like = play(&file);
+            match like {
                 Like::Yes => {
                     println!("❤️ {file:?}");
                     break;
                 }
                 Like::No => {
-                    println!("👻 {file:?}");
+                    println!("🚮 {file:?}");
                     break;
                 }
                 Like::DontKnow => {
                     println!("⥁ {file:?}");
+                    // no break, will keep repeating the song
                 }
             }
         }
+        songs.push(Song {
+            path: file
+                .to_str()
+                .unwrap_or_else(|| panic!("couldn't convert {file:?} to string"))
+                .to_owned(),
+            like,
+        });
+        serde_json::to_writer(
+            File::create(likes_path).unwrap_or_else(|_| panic!("couldn't open {likes_path:?}")),
+            &songs,
+        )?;
     }
     Ok(())
 }
@@ -133,9 +158,14 @@ fn main() -> Result<()> {
 fn load_likes(path: &Path) -> Result<Vec<Song>> {
     let file = match File::open(path) {
         Ok(x) => x,
-        Err(_) => File::create(path).with_context(|| format!("failed to create {path:?}"))?,
+        Err(_) => {
+            let mut f = File::create(path).with_context(|| format!("failed to create {path:?}"))?;
+            let _ = f.write(b"[]");
+            f
+        }
     };
     let reader = BufReader::new(file);
-    let files: Vec<Song> = serde_json::from_reader(reader)?;
+    let files = serde_json::from_reader(reader)?;
+    println!("{files:?}");
     Ok(files)
 }
