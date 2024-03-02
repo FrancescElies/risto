@@ -1,3 +1,4 @@
+// mod acoustid;
 use anyhow::{Context, Result};
 use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
@@ -78,15 +79,16 @@ fn play(path: &Path) -> Like {
     let (tx_stop_song, rx_stop_song) = channel();
 
     let file = File::open(path).unwrap();
+    // let path = path.to_owned();
     let th_player = thread::spawn(move || {
         // Play the MP3 file
-        let source = if let Ok(x) = Decoder::new(BufReader::new(file)) {
-            x
-        } else {
-            return;
+        let decoder = match Decoder::new(BufReader::new(file)) {
+            Ok(x) => x,
+            Err(_) => return,
         };
+        // let id = acoustid::sim_hash(&path);
         // let source = source.take_duration(Duration::from_secs(5));
-        sink.append(source);
+        sink.append(decoder);
 
         // while song playing
         while sink.len() != 0 {

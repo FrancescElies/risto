@@ -186,6 +186,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "chromaprint"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6824d8467bf7364d809c950cd13b9b95448769ce768123708ea60cd8f31333d"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -739,6 +748,7 @@ name = "risto"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chromaprint",
  "clap",
  "rodio",
  "serde",
