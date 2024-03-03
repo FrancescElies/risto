@@ -38,6 +38,7 @@ enum Like {
     Yes,
     No,
     DontKnow,
+    ExtensionNotSupported,
 }
 
 fn did_you_like_it() -> Result<Like> {
@@ -78,7 +79,17 @@ fn play(path: &Path) -> Result<Like> {
     let (tx_like, rx_like) = channel();
     let (tx_stop_song, rx_stop_song) = channel();
 
-    let file = File::open(path).with_context(|| format!("couldn't open fil {path:?}"))?;
+    let supported_extensions = ["mp3", "flac", "ogg", "wav", "mp4", "acc"];
+    let ext = path
+        .extension()
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or("unkown");
+    if !supported_extensions.contains(&ext) {
+        return Ok(Like::ExtensionNotSupported);
+    }
+
+    let file = File::open(path).with_context(|| format!("couldn't open file {path:?}"))?;
     // let path = path.to_owned();
     let th_player = thread::spawn(move || {
         // Play the MP3 file
@@ -156,6 +167,10 @@ fn main() -> Result<()> {
                 Like::DontKnow => {
                     println!("⥁ {file:?}");
                     // no break, will keep repeating the song
+                }
+                Like::ExtensionNotSupported => {
+                    println!("{file:?} filetype not supported, skipping");
+                    break;
                 }
             }
         }
