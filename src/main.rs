@@ -70,7 +70,7 @@ fn mp3_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
         .collect()
 }
 
-fn play(path: &Path) -> Like {
+fn play(path: &Path) -> Result<Like> {
     // Create an output stream
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let sink = Sink::try_new(&stream_handle).unwrap();
@@ -78,7 +78,7 @@ fn play(path: &Path) -> Like {
     let (tx_like, rx_like) = channel();
     let (tx_stop_song, rx_stop_song) = channel();
 
-    let file = File::open(path).unwrap();
+    let file = File::open(path).with_context(|| format!("couldn't open fil {path:?}"))?;
     // let path = path.to_owned();
     let th_player = thread::spawn(move || {
         // Play the MP3 file
@@ -122,7 +122,7 @@ fn play(path: &Path) -> Like {
     th_ipnut_reader.join().expect("player thread panicked!");
     th_player.join().expect("player thread panicked!");
 
-    like
+    Ok(like)
 }
 
 fn main() -> Result<()> {
@@ -143,7 +143,7 @@ fn main() -> Result<()> {
         println!("▶️  playing {file:?}");
         let mut like;
         loop {
-            like = play(file);
+            like = play(file)?;
             match like {
                 Like::Yes => {
                     println!("❤️ {file:?}");
