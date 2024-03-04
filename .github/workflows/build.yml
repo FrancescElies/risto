@@ -73,7 +73,6 @@ jobs:
           submodules: true
 
       - name: Install packages
-        if: ${{ matrix.os=='ubuntu-latest' }}
         run: sudo apt install librust-alsa-sys-dev
 
       - name: Install stable toolchain
