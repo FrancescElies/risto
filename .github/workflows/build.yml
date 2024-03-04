@@ -16,7 +16,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install packages
+      - name: Install librust-alsa-sys-dev
         run: sudo apt install librust-alsa-sys-dev
 
       - name: Install stable toolchain
@@ -44,7 +44,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install packages
+      - name: Install librust-alsa-sys-dev
         if: ${{ matrix.os=='ubuntu-latest' }}
         run: sudo apt install librust-alsa-sys-dev
 
@@ -72,7 +72,7 @@ jobs:
         with:
           submodules: true
 
-      - name: Install packages
+      - name: Install librust-alsa-sys-dev
         run: sudo apt install librust-alsa-sys-dev
 
       - name: Install stable toolchain

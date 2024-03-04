@@ -63,7 +63,7 @@ jobs:
         with:
           submodules: true
 
-      - name: Install packages
+      - name: Install librust-alsa-sys-dev
         if: matrix.os == 'ubuntu-20.04'
         run: sudo apt install librust-alsa-sys-dev
 
