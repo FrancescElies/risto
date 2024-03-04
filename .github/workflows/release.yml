@@ -64,7 +64,7 @@ jobs:
           submodules: true
 
       - name: Install packages
-        if: ${{ matrix.os=='ubuntu-20.04' }}
+        if: matrix.os == 'ubuntu-20.04'
         run: sudo apt install librust-alsa-sys-dev
 
       - name: Install ${{ matrix.rust }} toolchain
