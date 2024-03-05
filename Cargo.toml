@@ -18,5 +18,5 @@ walkdir = "2.4.0"
 [workspace.metadata.cross.target.aarch64-unknown-linux-gnu]
 pre-build = [
     "dpkg --add-architecture $CROSS_DEB_ARCH", 
-    "apt-get update && apt-get --assume-yes install alsa-dev librust-alsa-sys-dev:$CROSS_DEB_ARCH"
+    "apt-get update && apt-get --assume-yes install alsa-dev:$CROSS_DEB_ARCH librust-alsa-sys-dev:$CROSS_DEB_ARCH"
 ]
