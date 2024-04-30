@@ -1,7 +1,8 @@
 //! Risto helps you clean up your music by asking if you like
 //! one song at a time while playing it in the background.
 
-// mod acoustid;
+mod acoustid;
+
 use anyhow::{Context, Result};
 use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
