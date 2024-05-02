@@ -45,11 +45,12 @@ pub fn sim_hash(song: &Path) -> Result<String> {
     printer.finish();
     let fingerprint = printer.fingerprint();
 
-    Ok(format!("{:08x?}", &fingerprint))
+    Ok(format!("{:08x?}", fingerprint))
 }
 
 #[test]
 fn mp3_acoustid() {
-    let samples = get_raw_samples(Path::new("/home/cesc/Music/01 Internal Flight.mp3")).unwrap();
-    println!("{:?}", samples);
+    let path = Path::new("/home/cesc/Music/07 Toots & The Maytals - Funky Kingston.mp3");
+    let acoustid = sim_hash(&path).unwrap();
+    assert!(acoustid.starts_with("[016db1f6, 006db1be"));
 }
