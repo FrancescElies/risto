@@ -5,13 +5,13 @@ use rodio::{Decoder, Source};
 use rusty_chromaprint::{Configuration, Fingerprinter};
 
 #[derive(Debug)]
-struct Audio {
+pub struct Song {
     samples: Vec<i16>,
     sample_rate: u32,
     channels: u32,
 }
 
-fn get_raw_samples(song: &Path) -> Result<Audio> {
+fn get_raw_samples(song: &Path) -> Result<Song> {
     let file = BufReader::new(File::open(song).with_context(|| format!("opening song {song:?}"))?);
     let decoder = Decoder::new(BufReader::new(file))
         .with_context(|| format!("couldn't open song {song:?}"))?;
@@ -19,14 +19,14 @@ fn get_raw_samples(song: &Path) -> Result<Audio> {
     let sample_rate = decoder.sample_rate();
     let channels = decoder.channels().into();
     let samples = decoder.collect(); // TODO: it hangs
-    Ok(Audio {
+    Ok(Song {
         samples,
         sample_rate,
         channels,
     })
 }
 
-pub fn sim_hash(song: &Path) -> Result<String> {
+pub fn sim_hash(song: &Path) -> Result<(Song, Vec<u32>)> {
     let song = get_raw_samples(song)?;
     let mut printer = Fingerprinter::new(&Configuration::preset_test2());
     // Sampling rate is set to 44100 and stream has 2 audio channels. It is expected that samples
@@ -45,12 +45,15 @@ pub fn sim_hash(song: &Path) -> Result<String> {
     printer.finish();
     let fingerprint = printer.fingerprint();
 
-    Ok(format!("{:08x?}", fingerprint))
+    Ok((song, fingerprint.iter().map(|x| *x).collect()))
 }
 
 #[test]
 fn mp3_acoustid() {
     let path = Path::new("/home/cesc/Music/07 Toots & The Maytals - Funky Kingston.mp3");
-    let acoustid = sim_hash(&path).unwrap();
-    assert!(acoustid.starts_with("[016db1f6, 006db1be"));
+    let (song, acoustid) = sim_hash(&path).unwrap();
+    assert_eq!(song.sample_rate, 44_100);
+    assert_eq!(song.channels, 2);
+    assert_eq!(acoustid[0], 0x_016db1f6_u32);
+    assert_eq!(acoustid[1], 0x_006db1be_u32);
 }
