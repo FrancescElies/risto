@@ -26,7 +26,7 @@ fn get_raw_samples(song: &Path) -> Result<Song> {
     })
 }
 
-pub fn sim_hash(song: &Path) -> Result<(Song, Vec<u32>)> {
+pub fn compute_acoustid(song: &Path) -> Result<(Song, Vec<u32>)> {
     let song = get_raw_samples(song)?;
     let mut printer = Fingerprinter::new(&Configuration::preset_test2());
     // Sampling rate is set to 44100 and stream has 2 audio channels. It is expected that samples
@@ -51,7 +51,7 @@ pub fn sim_hash(song: &Path) -> Result<(Song, Vec<u32>)> {
 #[test]
 fn mp3_acoustid() {
     let path = Path::new("/home/cesc/Music/07 Toots & The Maytals - Funky Kingston.mp3");
-    let (song, acoustid) = sim_hash(&path).unwrap();
+    let (song, acoustid) = compute_acoustid(&path).unwrap();
     assert_eq!(song.sample_rate, 44_100);
     assert_eq!(song.channels, 2);
     assert_eq!(acoustid[0], 0x_016db1f6_u32);
