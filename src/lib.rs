@@ -1,5 +1,8 @@
+use twox_hash::XxHash64;
+
 use std::{
-    fs::File,
+    fs::{self, File},
+    hash::{BuildHasher, BuildHasherDefault},
     io::BufReader,
     path::{Path, PathBuf},
 };
@@ -38,7 +41,13 @@ impl Song {
         Ok((sample_rate, channels, decoder.collect()))
     }
 
-    pub fn get_acoustid(&mut self) -> Result<AcoustId> {
+    fn hash(&self) -> Result<u64> {
+        let data = fs::read(&self.path)?;
+        let hasher: BuildHasherDefault<XxHash64> = Default::default();
+        Ok(hasher.hash_one(data))
+    }
+    pub fn get_acoustid(&mut self) -> Result<String> {
+        println!("{} hash={:?}", self.path.display(), self.hash());
         let mut printer = Fingerprinter::new(&Configuration::preset_test2());
         // E.g. if sample_rate is  44100 and has 2 audio channels. It is expected that samples
         // are interleaved: in this case left channel samples are placed at even indices
@@ -55,8 +64,10 @@ impl Song {
         printer.finish();
         let fingerprint = printer.fingerprint();
 
-        self.acoustid = Some(fingerprint.iter().map(|x| *x).collect());
-        Ok(self.acoustid.clone().unwrap())
+        let acoustid = fingerprint.iter().map(|x| *x).collect::<Vec<_>>();
+        let res = Ok(acoustid.iter().map(ToString::to_string).collect());
+        self.acoustid = Some(acoustid);
+        res
     }
 }
 
