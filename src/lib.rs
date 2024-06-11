@@ -64,7 +64,7 @@ impl Song {
         printer.finish();
         let fingerprint = printer.fingerprint();
 
-        let acoustid = fingerprint.iter().map(|x| *x).collect::<Vec<_>>();
+        let acoustid = fingerprint.to_vec();
         let res = Ok(acoustid.iter().map(ToString::to_string).collect());
         self.acoustid = Some(acoustid);
         res
