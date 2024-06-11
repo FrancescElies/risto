@@ -1,19 +1,22 @@
 //! Risto helps you clean up your music by asking if you like
 //! one song at a time while playing it in the background.
 
-mod acoustid;
-
 use anyhow::{Context, Result};
+use crossterm::style::Color::DarkYellow;
 use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
     fs::File,
-    io::{self, BufReader, Write},
+    io::{BufReader, Write},
     path::{Path, PathBuf},
     sync::mpsc::channel,
     thread,
     time::Duration,
+};
+use termimad::*;
+use termimad::{
+    crossterm::style::Attribute::Underlined, mad_print_inline, minimad::TextTemplate, MadSkin,
 };
 use walkdir::WalkDir;
 
@@ -45,17 +48,11 @@ enum Like {
     ExtensionNotSupported,
 }
 
-fn did_you_like_it() -> Result<Like> {
-    print!("  Like it? yes(y)/love(l), no(n)/hate(h), repeat(r): ");
-    io::stdout()
-        .flush()
-        .with_context(|| "couldn't flush stdout")?; // Ensure the prompt is displayed
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-    Ok(match input.trim() {
-        "y" | "Y" | "l" | "L" => Like::Yes,
-        "n" | "N" => Like::No,
-        _ => Like::DontKnow,
+fn did_you_like_it(skin: &MadSkin) -> Like {
+    ask!(skin, "Do you like it?", ('y') {
+        ('y', "**y**es") => { Like::Yes }
+        ('n', "**n**o, thank you") => { Like::No }
+        ('r', "**r**epeat") => { Like::DontKnow }
     })
 }
 
@@ -75,7 +72,7 @@ fn mp3_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
         .collect()
 }
 
-fn play(path: &Path) -> Result<Like> {
+fn play(skin: &MadSkin, path: &Path) -> Result<Like> {
     // Create an output stream
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let sink = Sink::try_new(&stream_handle).unwrap();
@@ -122,8 +119,9 @@ fn play(path: &Path) -> Result<Like> {
         sink.stop();
     });
 
+    let skin = skin.clone();
     let th_ipnut_reader = thread::spawn(move || {
-        let like = did_you_like_it().unwrap_or(Like::DontKnow);
+        let like = did_you_like_it(&skin);
         // don't care if send fails
         let _ = tx_like.send(like);
         let _ = tx_stop_song.send(true);
@@ -141,6 +139,16 @@ fn play(path: &Path) -> Result<Like> {
 }
 
 fn main() -> Result<()> {
+    let mut skin = MadSkin::default();
+    skin.bold.set_fg(DarkYellow);
+    skin.italic.add_attr(Underlined);
+    let text_template = TextTemplate::from("# ${app-name} v${app-version}");
+    let mut expander = text_template.expander();
+    expander
+        .set("app-name", env!("CARGO_PKG_NAME"))
+        .set("app-version", env!("CARGO_PKG_VERSION"));
+    skin.print_expander(expander);
+
     let args = Cli::parse();
 
     let music_dr = args.music_dir;
@@ -151,29 +159,29 @@ fn main() -> Result<()> {
     for file in mp3_files(music_dr).iter().filter(|x| {
         let keep = !already_listened_longs.contains(x.to_str().unwrap_or(""));
         if !keep {
-            println!("👣 skipping {x:?}");
+            mad_print_inline!(&skin, "*skipped* $0\n", x.display());
         }
         keep
     }) {
-        println!("▶️  playing {file:?}");
+        mad_print_inline!(&skin, "**playing** $0\n", file.display());
         let mut like;
         loop {
-            like = play(file)?;
+            like = play(&skin, file)?;
             match like {
                 Like::Yes => {
-                    println!("❤️ {file:?}");
+                    mad_print_inline!(&skin, "*liked*  $0\n", file.display());
                     break;
                 }
                 Like::No => {
-                    println!("🚮 {file:?}");
+                    mad_print_inline!(&skin, "*trash*  $0\n", file.display());
                     break;
                 }
                 Like::DontKnow => {
-                    println!("⥁ {file:?}");
+                    mad_print_inline!(&skin, "*not sure*  $0\n", file.display());
                     // no break, will keep repeating the song
                 }
                 Like::ExtensionNotSupported => {
-                    println!("{file:?} filetype not supported, skipping");
+                    mad_print_inline!(&skin, "$0 *not supported*, skipped\n", file.display());
                     break;
                 }
             }
