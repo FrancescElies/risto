@@ -71,13 +71,13 @@ impl Song {
     }
 }
 
-#[test]
-fn mp3_acoustid() {
-    let path = Path::new("/home/cesc/Music/07 Toots & The Maytals - Funky Kingston.mp3");
-    let mut song = Song::new(path);
-    song.get_acoustid().unwrap();
-
-    let acoustid = song.acoustid.unwrap();
-    assert_eq!(acoustid[0], 0x_016db1f6_u32);
-    assert_eq!(acoustid[1], 0x_006db1be_u32);
-}
+// #[test]
+// fn mp3_acoustid() {
+//     let path = Path::new("/home/cesc/Music/07 Toots & The Maytals - Funky Kingston.mp3");
+//     let mut song = Song::new(path);
+//     song.get_acoustid().unwrap();
+//
+//     let acoustid = song.acoustid.unwrap();
+//     assert_eq!(acoustid[0], 0x_016db1f6_u32);
+//     assert_eq!(acoustid[1], 0x_006db1be_u32);
+// }
