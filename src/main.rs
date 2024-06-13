@@ -74,8 +74,9 @@ fn mp3_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
 
 fn play(skin: &MadSkin, path: &Path) -> Result<Like> {
     // Create an output stream
-    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    let sink = Sink::try_new(&stream_handle).unwrap();
+    let (_stream, stream_handle) =
+        OutputStream::try_default().with_context(|| "output stream".to_owned())?;
+    let sink = Sink::try_new(&stream_handle).with_context(|| "creating sink".to_owned())?;
 
     let (tx_like, rx_like) = channel();
     let (tx_stop_song, rx_stop_song) = channel();
@@ -193,7 +194,7 @@ fn main() -> Result<()> {
                 .to_owned(),
             like,
         });
-        serde_json::to_writer(
+        serde_json::to_writer_pretty(
             File::create(likes_path).unwrap_or_else(|_| panic!("couldn't open {likes_path:?}")),
             &songs,
         )?;
