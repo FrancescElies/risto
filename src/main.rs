@@ -20,15 +20,31 @@ use termimad::{
 };
 use walkdir::WalkDir;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
-/// Classify music stop at any time and continue later on.
-///
-/// Saves results to likes.json, later on you can process the json e.g. remove files you didn't like.
-#[derive(Parser)]
+#[derive(Parser, Debug)]
+#[command(name = "risto")]
+#[command(
+    about = "Classify music stop at any time and continue later on.",
+    long_about = "Saves results to likes.json, later on you can process the json e.g. remove files you didn't like."
+)]
 struct Cli {
-    /// Path to your music folder
-    music_dir: PathBuf,
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Debug, Subcommand)]
+#[command(version, about, long_about = None)]
+enum Commands {
+    /// Classify music while listening to it
+    #[command(arg_required_else_help = true)]
+    Listen {
+        /// Path to folder with music
+        #[arg(value_name = "PATH")]
+        music_dir: Option<PathBuf>,
+    },
+    /// Removes files marked as not liked
+    RemoveDisliked {},
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -152,37 +168,48 @@ fn main() -> Result<()> {
 
     let args = Cli::parse();
 
-    let music_dr = args.music_dir;
+    match args.command {
+        Commands::Listen { music_dir } => {
+            classify_music(&skin, music_dir.as_ref())?;
+        }
+        Commands::RemoveDisliked {} => todo!(),
+    };
 
+    Ok(())
+}
+
+fn classify_music(skin: &MadSkin, music_dir: Option<&PathBuf>) -> Result<()> {
+    let pwd = Path::new(".").to_path_buf();
+    let music_dir: &PathBuf = music_dir.unwrap_or(&pwd);
     let likes_path = Path::new("likes.json");
     let mut songs = load_likes(likes_path)?;
     let already_listened_longs: HashSet<String> = songs.iter().map(|x| x.path.clone()).collect();
-    for file in mp3_files(music_dr).iter().filter(|x| {
+    for file in mp3_files(music_dir).iter().filter(|x| {
         let keep = !already_listened_longs.contains(x.to_str().unwrap_or(""));
         if !keep {
-            mad_print_inline!(&skin, "*skipped* $0\n", x.display());
+            mad_print_inline!(skin, "*skipped* $0\n", x.display());
         }
         keep
     }) {
-        mad_print_inline!(&skin, "**playing** $0\n", file.display());
+        mad_print_inline!(skin, "**playing** $0\n", file.display());
         let mut like;
         loop {
-            like = play(&skin, file)?;
+            like = play(skin, file)?;
             match like {
                 Like::Yes => {
-                    mad_print_inline!(&skin, "*liked*  $0\n", file.display());
+                    mad_print_inline!(skin, "*liked*  $0\n", file.display());
                     break;
                 }
                 Like::No => {
-                    mad_print_inline!(&skin, "*trash*  $0\n", file.display());
+                    mad_print_inline!(skin, "*trash*  $0\n", file.display());
                     break;
                 }
                 Like::DontKnow => {
-                    mad_print_inline!(&skin, "*not sure*  $0\n", file.display());
+                    mad_print_inline!(skin, "*not sure*  $0\n", file.display());
                     // no break, will keep repeating the song
                 }
                 Like::ExtensionNotSupported => {
-                    mad_print_inline!(&skin, "$0 *not supported*, skipped\n", file.display());
+                    mad_print_inline!(skin, "$0 *not supported*, skipped\n", file.display());
                     break;
                 }
             }
