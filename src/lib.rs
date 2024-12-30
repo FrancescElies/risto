@@ -47,7 +47,11 @@ impl Song {
     }
 
     pub fn get_acoustid(&mut self) -> Result<String> {
-        println!("{} hash={:?}", self.path.display(), self.hash());
+        eprintln!(
+            "Calculating acoustid for {} hash={:?}",
+            self.path.display(),
+            self.hash()
+        );
 
         // E.g. if sample_rate is  44100 and has 2 audio channels. It is expected that samples
         // are interleaved: in this case left channel samples are placed at even indices

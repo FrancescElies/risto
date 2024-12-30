@@ -26,7 +26,6 @@ fn main() -> Result<()> {
     let path = Path::new(path.as_ref());
 
     for file in mp3_files(path).iter() {
-        eprintln!("Calculating acoustid for {}", file.display());
         let acoustid = Song::new(file)?
             .get_acoustid()
             .with_context(|| format!("{}", path.display()))?;
