@@ -1,7 +1,6 @@
 use twox_hash::XxHash64;
 use walkdir::WalkDir;
 
-use core::str;
 use std::{
     fs::{self, File},
     hash::{BuildHasher, BuildHasherDefault},
@@ -10,15 +9,13 @@ use std::{
 };
 
 use anyhow::{Context, Ok, Result};
+use chromaprint_native;
 use rodio::{Decoder, Source};
-use rusty_chromaprint::{Configuration, Fingerprinter};
-
-type AcoustId = Vec<u32>;
 
 #[derive(Debug, Default)]
 pub struct Song {
     path: PathBuf,
-    acoustid: Option<AcoustId>,
+    acoustid: Option<String>,
 }
 
 impl Song {
@@ -51,25 +48,19 @@ impl Song {
 
     pub fn get_acoustid(&mut self) -> Result<String> {
         println!("{} hash={:?}", self.path.display(), self.hash());
-        let mut printer = Fingerprinter::new(&Configuration::preset_test2());
+
         // E.g. if sample_rate is  44100 and has 2 audio channels. It is expected that samples
         // are interleaved: in this case left channel samples are placed at even indices
         // and right channel - at odd ones.
-        let (sample_rate, channels, samples) = self.get_raw_samples()?;
-        printer.start(sample_rate, channels).with_context(|| {
-            format!(
-                "couldn't initialize fingerprinter sample_rate={} channel={}",
-                sample_rate, channels
-            )
-        })?;
-        // printer.consume(&[-100, -100, -50, -50, 1000, 1000]);
-        printer.consume(&samples);
-        printer.finish();
-        let fingerprint = printer.fingerprint();
+        let (sample_rate, num_channels, samples) = self.get_raw_samples()?;
+        let mut ctx = chromaprint_native::Context::new();
+        ctx.start(sample_rate.try_into()?, num_channels.try_into()?)?;
+        ctx.feed(&samples)?;
+        ctx.finish()?;
 
-        let acoustid = fingerprint.to_vec();
-        self.acoustid = Some(acoustid);
-        Ok(format!("{:08x?}", &fingerprint))
+        let acoustid = ctx.fingerprint()?;
+        self.acoustid = Some(acoustid.clone());
+        Ok(acoustid)
     }
 }
 

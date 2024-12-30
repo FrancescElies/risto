@@ -26,7 +26,14 @@ fn main() -> Result<()> {
         let acoustid = Song::new(file)?
             .get_acoustid()
             .with_context(|| format!("{}", path.display()))?;
-        println!("{:08x?}... for {}", &acoustid, file.display());
+        eprintln!("{} for {}", &acoustid, file.display());
+        let url = format!(
+            "https://api.acoustid.org/v2/lookup?client=ks84xymUAAY&duration=641&fingerprint={}",
+            acoustid
+        );
+        eprintln!("Fetching {url:?}...");
+        let res = reqwest::blocking::get(url)?;
+        eprintln!("Response: {:#?}", res);
     }
 
     Ok(())

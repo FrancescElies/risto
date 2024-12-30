@@ -9,21 +9,14 @@ edition = "2021"
 anyhow = "1.0.80"
 clap = { version =  "4.5.1", features = ["derive"] }
 rodio = "0.17.3"
-rusty-chromaprint = "0.2.0"
+chromaprint_native = { git = "https://github.com/0xcaff/rust-chromaprint-native" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 shellexpand = "3.1.0"
 termimad = "0.29.2"
 twox-hash = "1.6.3"
 walkdir = "2.4.0"
-
-# Example install libssl-dev:arm64, see <https://github.com/cross-rs/cross/blob/main/docs/custom_images.md#adding-dependencies-to-existing-images>
-[workspace.metadata.cross.target.aarch64-unknown-linux-gnu]
-pre-build = [
-    "dpkg --add-architecture $CROSS_DEB_ARCH", 
-    "apt-get update ",
-    "apt-get --assume-yes install alsa-dev:$CROSS_DEB_ARCH librust-alsa-sys-dev:$CROSS_DEB_ARCH",
-]
+reqwest = { version = "0.12.11", features = ["blocking"] }
 
 [[bin]]
 name = "acoustid"
