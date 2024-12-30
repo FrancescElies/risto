@@ -16,7 +16,7 @@ shellexpand = "3.1.0"
 termimad = "0.29.2"
 twox-hash = "1.6.3"
 walkdir = "2.4.0"
-reqwest = { version = "0.12.11", features = ["blocking"] }
+reqwest = { version = "0.12.11", features = ["blocking", "json"] }
 
 [[bin]]
 name = "acoustid"

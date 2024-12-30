@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
 use risto::{mp3_files, Song};
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use clap::Parser;
 
@@ -26,14 +29,29 @@ fn main() -> Result<()> {
         let acoustid = Song::new(file)?
             .get_acoustid()
             .with_context(|| format!("{}", path.display()))?;
-        eprintln!("{} for {}", &acoustid, file.display());
-        let url = format!(
-            "https://api.acoustid.org/v2/lookup?client=ks84xymUAAY&duration=641&fingerprint={}",
-            acoustid
-        );
-        eprintln!("Fetching {url:?}...");
-        let res = reqwest::blocking::get(url)?;
-        eprintln!("Response: {:#?}", res);
+        eprintln!("{}... acoustid for {}", &acoustid[0..15], file.display());
+
+        // API docs https://acoustid.org/webservice
+        let url = "https://api.acoustid.org/v2/lookup";
+
+        let client = reqwest::blocking::Client::new();
+        let mut map = HashMap::new();
+        map.insert("format", "json"); // response format
+        map.insert("client", "ks84xymUAAY"); // application's API key
+                                             //map.insert("meta", "recordings");
+                                             //map.insert("trackid", "9ff43b6a-4f16-427c-93c2-92307ca505e0");
+        map.insert("duration", "641"); // duration of the whole audio file in seconds
+        map.insert("fingerprint", &acoustid); // audio fingerprint
+
+        eprintln!("REQUEST {url}");
+        let res = client
+            .get(url)
+            .query(&map) // 414 URI Too Long
+            // TODO: maybe register app in https://acoustid.org/webservice instead of using default
+            // client API key?
+            .send()?;
+
+        eprintln!("Response {}: {:#?}", res.status(), res.bytes());
     }
 
     Ok(())
