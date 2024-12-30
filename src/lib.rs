@@ -1,5 +1,7 @@
 use twox_hash::XxHash64;
+use walkdir::WalkDir;
 
+use core::str;
 use std::{
     fs::{self, File},
     hash::{BuildHasher, BuildHasherDefault},
@@ -20,11 +22,11 @@ pub struct Song {
 }
 
 impl Song {
-    pub fn new(path: &Path) -> Self {
-        Song {
-            path: path.to_path_buf(),
+    pub fn new(path: &Path) -> Result<Self> {
+        Ok(Song {
+            path: path.canonicalize()?.to_path_buf(),
             acoustid: None,
-        }
+        })
     }
 
     pub fn get_raw_samples(&self) -> Result<(u32, u32, Vec<i16>)> {
@@ -46,6 +48,7 @@ impl Song {
         let hasher: BuildHasherDefault<XxHash64> = Default::default();
         Ok(hasher.hash_one(data))
     }
+
     pub fn get_acoustid(&mut self) -> Result<String> {
         println!("{} hash={:?}", self.path.display(), self.hash());
         let mut printer = Fingerprinter::new(&Configuration::preset_test2());
@@ -65,10 +68,25 @@ impl Song {
         let fingerprint = printer.fingerprint();
 
         let acoustid = fingerprint.to_vec();
-        let res = Ok(acoustid.iter().map(ToString::to_string).collect());
         self.acoustid = Some(acoustid);
-        res
+        Ok(format!("{:08x?}", &fingerprint))
     }
+}
+
+pub fn mp3_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
+    WalkDir::new(path)
+        .into_iter()
+        .filter_map(|x| match x {
+            std::result::Result::Ok(f) => {
+                if f.file_type().is_file() {
+                    Some(f.path().to_owned())
+                } else {
+                    None
+                }
+            }
+            Err(_) => None,
+        })
+        .collect()
 }
 
 // #[test]

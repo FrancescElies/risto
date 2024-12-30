@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use risto::Song;
+use risto::{mp3_files, Song};
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
@@ -20,19 +20,13 @@ fn main() -> Result<()> {
 
     let path = shellexpand::full(&path_str)
         .with_context(|| format!("couldn't expand {}", &path.display()))?;
-    let path = path.as_ref();
-    let path = Path::new(path);
-    println!("path {}", path.display());
-    let path = path.canonicalize()?;
+    let path = Path::new(path.as_ref());
 
-    if path.is_dir() {
-        todo!();
-    } else if path.is_file() {
-        let mut song = Song::new(&path);
-        let acoustid = song.get_acoustid().unwrap();
-        println!("{acoustid}");
-    } else {
-        todo!();
+    for file in mp3_files(path).iter() {
+        let acoustid = Song::new(file)?
+            .get_acoustid()
+            .with_context(|| format!("{}", path.display()))?;
+        println!("{:08x?}... for {}", &acoustid, file.display());
     }
 
     Ok(())

@@ -3,6 +3,7 @@
 
 use anyhow::{Context, Result};
 use crossterm::style::Color::DarkYellow;
+use risto::mp3_files;
 use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -18,7 +19,6 @@ use termimad::*;
 use termimad::{
     crossterm::style::Attribute::Underlined, mad_print_inline, minimad::TextTemplate, MadSkin,
 };
-use walkdir::WalkDir;
 
 use clap::{Parser, Subcommand};
 
@@ -70,22 +70,6 @@ fn did_you_like_it(skin: &MadSkin) -> Like {
         ('n', "**n**o, thank you") => { Like::No }
         ('r', "**r**epeat") => { Like::DontKnow }
     })
-}
-
-fn mp3_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
-    WalkDir::new(path)
-        .into_iter()
-        .filter_map(|x| match x {
-            Ok(f) => {
-                if f.file_type().is_file() {
-                    Some(f.path().to_owned())
-                } else {
-                    None
-                }
-            }
-            Err(_) => None,
-        })
-        .collect()
 }
 
 fn play(skin: &MadSkin, path: &Path) -> Result<Like> {
