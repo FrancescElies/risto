@@ -1,3 +1,3 @@
 # https://acoustid.org/webservice#lookup
-acoustid path:
-    cargo r --bin acoustid "{{path}}"
+acoustid mp3file_or_dir:
+    cargo r --bin acoustid "{{mp3file_or_dir}}"
