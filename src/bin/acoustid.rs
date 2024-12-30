@@ -51,7 +51,7 @@ fn main() -> Result<()> {
             // client API key?
             .send()?;
 
-        eprintln!("Response {}: {:#?}", res.status(), res.bytes());
+        eprintln!("Response:\n {:#?}", &res);
     }
 
     Ok(())
