@@ -26,10 +26,11 @@ fn main() -> Result<()> {
     let path = Path::new(path.as_ref());
 
     for file in mp3_files(path).iter() {
+        eprintln!("Calculating acoustid for {}", file.display());
         let acoustid = Song::new(file)?
             .get_acoustid()
             .with_context(|| format!("{}", path.display()))?;
-        eprintln!("{}... acoustid for {}", &acoustid[0..15], file.display());
+        eprintln!("acoustid: {}...", &acoustid[0..15],);
 
         // API docs https://acoustid.org/webservice
         let url = "https://api.acoustid.org/v2/lookup";
