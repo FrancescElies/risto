@@ -26,7 +26,8 @@ fn main() -> Result<()> {
     let path = Path::new(path.as_ref());
 
     for file in mp3_files(path).iter() {
-        let acoustid = Song::new(file)?
+        let mut song = Song::new(file)?;
+        let acoustid = song
             .get_acoustid()
             .with_context(|| format!("{}", path.display()))?;
         eprintln!("acoustid: {}...", &acoustid[0..15],);
@@ -35,21 +36,22 @@ fn main() -> Result<()> {
         let url = "https://api.acoustid.org/v2/lookup";
 
         let client = reqwest::blocking::Client::new();
-        let mut map = HashMap::new();
-        map.insert("format", "json"); // response format
-        map.insert("client", "ks84xymUAAY"); // application's API key
-                                             //map.insert("meta", "recordings");
-                                             //map.insert("trackid", "9ff43b6a-4f16-427c-93c2-92307ca505e0");
-        map.insert("duration", "641"); // duration of the whole audio file in seconds
-        map.insert("fingerprint", &acoustid); // audio fingerprint
+        let duration = song
+            .get_duration()
+            .unwrap_or_default()
+            .as_secs()
+            .to_string();
+        let map = HashMap::from([
+            ("format", "json"),        // response format
+            ("client", "ks84xymUAAY"), // API key
+            ("duration", &duration),   // song duration
+            ("fingerprint", &acoustid),
+        ]);
 
-        eprintln!("REQUEST {url}");
-        let res = client
-            .get(url)
-            .query(&map) // 414 URI Too Long
-            // TODO: maybe register app in https://acoustid.org/webservice instead of using default
-            // client API key?
-            .send()?;
+        eprintln!("REQUEST {url} {map:#?}");
+        let req = client.post(url).json(&map); // 414 URI Too Long
+        eprintln!("Request::\n {:#?}", req);
+        let res = req.send()?;
 
         eprintln!("Response:\n {:#?}", res);
         eprintln!("Bytes:\n {:#?}", res.bytes());

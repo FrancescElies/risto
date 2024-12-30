@@ -6,9 +6,10 @@ use std::{
     hash::{BuildHasher, BuildHasherDefault},
     io::BufReader,
     path::{Path, PathBuf},
+    time::Duration,
 };
 
-use anyhow::{Context, Ok, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 use chromaprint_native;
 use rodio::{Decoder, Source};
 
@@ -24,6 +25,19 @@ impl Song {
             path: path.canonicalize()?.to_path_buf(),
             acoustid: None,
         })
+    }
+
+    pub fn get_duration(&self) -> Result<Duration> {
+        let file = BufReader::new(
+            File::open(&self.path)
+                .with_context(|| format!("opening song {:?}", self.path.clone()))?,
+        );
+        let decoder = Decoder::new(BufReader::new(file))
+            .with_context(|| format!("couldn't open song {self:?}"))?;
+
+        decoder
+            .total_duration()
+            .ok_or(anyhow!("duration not available"))
     }
 
     pub fn get_raw_samples(&self) -> Result<(u32, u32, Vec<i16>)> {
