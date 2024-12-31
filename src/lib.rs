@@ -13,7 +13,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use rodio::{Decoder, Source};
 
 #[derive(Debug, Clone)]
@@ -31,6 +31,11 @@ pub struct Song {
     acoustid: Option<AcoustId>,
     cache_acoustid: Option<Db>,
 }
+impl Display for Song {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Song at {}", self.path.display())
+    }
+}
 
 impl Song {
     pub fn new(path: &Path) -> Result<Self> {
@@ -42,16 +47,9 @@ impl Song {
     }
 
     pub fn get_duration(&self) -> Result<Duration> {
-        let file = BufReader::new(
-            File::open(&self.path)
-                .with_context(|| format!("opening song {:?}", self.path.clone()))?,
-        );
-        let decoder = Decoder::new(BufReader::new(file))
-            .with_context(|| format!("couldn't open song {self:?}"))?;
-
-        decoder
-            .total_duration()
-            .ok_or(anyhow!("duration not available"))
+        let (sample_rate, channels, samples) = self.get_raw_samples()?;
+        let seconds: u64 = samples.len() as u64 / channels as u64 / sample_rate as u64;
+        Ok(Duration::from_secs(seconds))
     }
 
     pub fn get_raw_samples(&self) -> Result<(u32, u32, Vec<i16>)> {
