@@ -30,7 +30,7 @@ fn main() -> Result<()> {
         let acoustid = song
             .get_acoustid()
             .with_context(|| format!("{}", path.display()))?;
-        eprintln!("acoustid: {}...", &acoustid[0..15],);
+        eprintln!("acoustid: {}...", &acoustid.to_string()[0..15],);
 
         // API docs https://acoustid.org/webservice
         let url = "https://api.acoustid.org/v2/lookup";
@@ -41,11 +41,12 @@ fn main() -> Result<()> {
             .unwrap_or_default()
             .as_secs()
             .to_string();
+        let fingerprint = acoustid.to_string();
         let map = HashMap::from([
             ("format", "json"),        // response format
             ("client", "ks84xymUAAY"), // API key
             ("duration", &duration),   // song duration
-            ("fingerprint", &acoustid),
+            ("fingerprint", &fingerprint),
         ]);
 
         eprintln!("REQUEST {url} {map:#?}");

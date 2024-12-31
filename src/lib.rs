@@ -1,7 +1,11 @@
+mod cache;
+
+use cache::Db;
 use twox_hash::XxHash64;
 use walkdir::WalkDir;
 
 use std::{
+    fmt::Display,
     fs::{self, File},
     hash::{BuildHasher, BuildHasherDefault},
     io::BufReader,
@@ -9,14 +13,23 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, Context, Ok, Result};
-use chromaprint_native;
+use anyhow::{anyhow, Context, Result};
 use rodio::{Decoder, Source};
+
+#[derive(Debug, Clone)]
+pub struct AcoustId(String);
+
+impl Display for AcoustId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct Song {
     path: PathBuf,
-    acoustid: Option<String>,
+    acoustid: Option<AcoustId>,
+    cache_acoustid: Option<Db>,
 }
 
 impl Song {
@@ -24,6 +37,7 @@ impl Song {
         Ok(Song {
             path: path.canonicalize()?.to_path_buf(),
             acoustid: None,
+            cache_acoustid: Db::new().ok(),
         })
     }
 
@@ -60,12 +74,8 @@ impl Song {
         Ok(hasher.hash_one(data))
     }
 
-    pub fn get_acoustid(&mut self) -> Result<String> {
-        eprintln!(
-            "Calculating acoustid for {} hash={:?}",
-            self.path.display(),
-            self.hash()
-        );
+    pub fn calc_acoustid(&mut self) -> Result<AcoustId> {
+        eprintln!("Calculating acoustid for {}", self.path.display(),);
 
         // E.g. if sample_rate is  44100 and has 2 audio channels. It is expected that samples
         // are interleaved: in this case left channel samples are placed at even indices
@@ -76,9 +86,31 @@ impl Song {
         ctx.feed(&samples)?;
         ctx.finish()?;
 
-        let acoustid = ctx.fingerprint()?;
-        self.acoustid = Some(acoustid.clone());
+        let acoustid = AcoustId(ctx.fingerprint()?);
         Ok(acoustid)
+    }
+
+    pub fn get_acoustid(&mut self) -> Result<AcoustId> {
+        let hash = self.hash()?;
+        let acoustid = if let Some(cache) = &self.cache_acoustid {
+            cache.get_acoustid(&hash.to_string()).ok()
+        } else {
+            None
+        };
+
+        match acoustid {
+            Some(acoustid) => {
+                self.acoustid = Some(acoustid.clone());
+                Ok(acoustid)
+            }
+            None => {
+                let acoustid = self.calc_acoustid()?;
+                if let Some(cache) = &self.cache_acoustid {
+                    cache.insert(&hash.to_string(), acoustid.clone())?;
+                }
+                Ok(acoustid)
+            }
+        }
     }
 }
 

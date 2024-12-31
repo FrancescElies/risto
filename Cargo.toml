@@ -17,6 +17,8 @@ termimad = "0.29.2"
 twox-hash = "1.6.3"
 walkdir = "2.4.0"
 reqwest = { version = "0.12.11", features = ["blocking", "json"] }
+sled = { version = "0.34.7", features = ["compression", "docs"] }
+directories = "5.0.1"
 
 [[bin]]
 name = "acoustid"
