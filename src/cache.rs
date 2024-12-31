@@ -20,6 +20,7 @@ impl Db {
 
     pub fn get_acoustid(&self, key: &str) -> Result<AcoustId> {
         let res = self.tree.get(key)?.ok_or(anyhow!("missing"))?;
+        eprintln!("cache-hit for key={key}");
         let val = std::str::from_utf8(res.as_ref()).unwrap();
         Ok(AcoustId(val.to_string()))
     }

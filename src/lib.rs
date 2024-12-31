@@ -27,7 +27,7 @@ impl Display for AcoustId {
 
 #[derive(Debug, Default)]
 pub struct Song {
-    path: PathBuf,
+    pub path: PathBuf,
     acoustid: Option<AcoustId>,
     cache_acoustid: Option<Db>,
 }
@@ -47,6 +47,7 @@ impl Song {
     }
 
     pub fn get_duration(&self) -> Result<Duration> {
+        eprintln!("FIX: yes get_duration is slower than necessary");
         let (sample_rate, channels, samples) = self.get_raw_samples()?;
         let seconds: u64 = samples.len() as u64 / channels as u64 / sample_rate as u64;
         Ok(Duration::from_secs(seconds))
