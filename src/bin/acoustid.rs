@@ -3,6 +3,7 @@ use risto::{mp3_files, Song};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
+    time::Duration,
 };
 
 use clap::Parser;
@@ -38,19 +39,18 @@ fn main() -> Result<()> {
         let client = reqwest::blocking::Client::new();
         let duration = song
             .get_duration()
-            .unwrap_or_default()
+            .unwrap_or(Duration::from_secs(60)) // FIX: get real duration
             .as_secs()
             .to_string();
         let fingerprint = acoustid.to_string();
         let map = HashMap::from([
             ("format", "json"),        // response format
-            ("client", "ks84xymUAAY"), // API key
+            ("client", "NiN6PFIhRAs"), // API key https://acoustid.org/webservice#lookup
             ("duration", &duration),   // song duration
             ("fingerprint", &fingerprint),
         ]);
 
-        eprintln!("REQUEST {url} {map:#?}");
-        let req = client.post(url).json(&map); // 414 URI Too Long
+        let req = client.post(url).form(&map); // 414 URI Too Long
         eprintln!("Request::\n {:#?}", req);
         let res = req.send()?;
 
