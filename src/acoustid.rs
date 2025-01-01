@@ -83,7 +83,7 @@ pub fn lookup_by_fingerprint(mut song: Song) -> Result<()> {
     let artist = most_likely_candidate
         .artists
         .as_ref()
-        .unwrap()
+        .unwrap() // won't panic because of find(...)
         .first()
         .ok_or(anyhow!(""))?
         .name
