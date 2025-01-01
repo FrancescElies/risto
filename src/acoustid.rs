@@ -41,7 +41,7 @@ pub struct SongData {
 pub fn lookup_by_fingerprint(mut song: Song) -> Result<SongData> {
     // API key https://acoustid.org/webservice#lookup
     let api_key = std::env::var("ACOUSTID_API_KEY").with_context(|| {
-        "reading env var ACOUSTID_API_KEY, you can get an api-key from https://acoustid.org"
+        "reading env var ACOUSTID_API_KEY, register app at https://acoustid.org/my-applications or use the same client as in examples at https://acoustid.org/webservice"
     })?;
 
     let acoustid = song

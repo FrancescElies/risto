@@ -48,6 +48,7 @@ impl Song {
     }
 
     pub fn get_duration(&self) -> Result<Duration> {
+        // TODO: cache duration
         eprintln!("FIX: yes get_duration is slower than necessary");
         let (sample_rate, channels, samples) = self.get_raw_samples()?;
         let seconds: u64 = samples.len() as u64 / channels as u64 / sample_rate as u64;
@@ -106,7 +107,7 @@ impl Song {
             None => {
                 let acoustid = self.calc_acoustid()?;
                 if let Some(cache) = &self.cache_acoustid {
-                    cache.insert(&hash.to_string(), acoustid.clone())?;
+                    cache.insert_acoustid(&hash.to_string(), acoustid.clone())?;
                 }
                 Ok(acoustid)
             }
