@@ -9,3 +9,5 @@ would like to keep  until them until exhausted, unliked files are moved to trash
 
 ![Example](./.readme/example.png "Example")
 
+Set env-var `ACOUSTID_API_KEY` [acoustid.org](https://acoustid.org) to retrieve
+music metadata.
