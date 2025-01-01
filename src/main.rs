@@ -67,7 +67,7 @@ enum Like {
 fn did_you_like_it(skin: &MadSkin) -> Like {
     ask!(skin, "Do you like it?", ('y') {
         ('y', "**y**es") => { Like::Yes }
-        ('n', "**n**o, thank you") => { Like::No }
+        ('n', "**n**o, please   move to trash") => { Like::No }
         ('r', "**r**epeat") => { Like::DontKnow }
     })
 }
@@ -186,6 +186,7 @@ fn classify_music(skin: &MadSkin, music_dir: Option<&PathBuf>) -> Result<()> {
                 }
                 Like::No => {
                     mad_print_inline!(skin, "*trash*  $0\n", file.display());
+                    trash::delete(file);
                     break;
                 }
                 Like::DontKnow => {
