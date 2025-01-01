@@ -1,3 +1,4 @@
+pub mod acoustid;
 mod cache;
 
 use cache::Db;

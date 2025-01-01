@@ -186,7 +186,7 @@ fn classify_music(skin: &MadSkin, music_dir: Option<&PathBuf>) -> Result<()> {
                 }
                 Like::No => {
                     mad_print_inline!(skin, "*trash*  $0\n", file.display());
-                    trash::delete(file);
+                    trash::delete(file)?;
                     break;
                 }
                 Like::DontKnow => {
