@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use risto::{mp3_files, Song};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -98,8 +98,27 @@ fn lookup_by_fingerprint(mut song: Song) -> Result<(), anyhow::Error> {
     //eprintln!("Response: {:#?}", json);
 
     let mut candidates = json.results;
-    candidates.sort_by(|a, b| a.score.partial_cmp(&b.score).unwrap());
-    eprintln!("Response: {:#?}", candidates);
+    candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+    let most_likely_candidate = candidates
+        .first()
+        .ok_or(anyhow!(""))?
+        .recordings
+        .iter()
+        .filter(|x| x.title.is_some() && x.artists.is_some())
+        .next()
+        .ok_or(anyhow!(""))?;
+
+    let title = most_likely_candidate.title.clone().unwrap();
+    let artist = most_likely_candidate
+        .artists
+        .as_ref()
+        .unwrap()
+        .first()
+        .ok_or(anyhow!(""))?
+        .name
+        .clone()
+        .ok_or(anyhow!(""))?;
+    eprintln!("Most likely artist `{artist}` and tilte `{title}` ");
 
     Ok(())
 }
