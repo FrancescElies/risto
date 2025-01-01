@@ -33,7 +33,12 @@ struct SongMatch {
     recordings: Vec<Recordings>,
 }
 
-pub fn lookup_by_fingerprint(mut song: Song) -> Result<()> {
+pub struct SongData {
+    pub title: String,
+    pub artist: String,
+}
+
+pub fn lookup_by_fingerprint(mut song: Song) -> Result<SongData> {
     // API key https://acoustid.org/webservice#lookup
     let api_key = std::env::var("ACOUSTID_API_KEY").with_context(|| {
         "reading env var ACOUSTID_API_KEY, you can get an api-key from https://acoustid.org"
@@ -89,7 +94,6 @@ pub fn lookup_by_fingerprint(mut song: Song) -> Result<()> {
         .name
         .clone()
         .ok_or(anyhow!(""))?;
-    eprintln!("Most likely artist `{artist}` and tilte `{title}` ");
 
-    Ok(())
+    Ok(SongData { title, artist })
 }
