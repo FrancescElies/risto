@@ -23,6 +23,7 @@ fn main() -> Result<()> {
     let path = Path::new(path.as_ref());
 
     for file in mp3_files(path).iter() {
+        eprintln!("File `{}`", file.display());
         let song = acoustid::lookup_by_fingerprint(Song::new(file)?)?;
 
         eprintln!(
