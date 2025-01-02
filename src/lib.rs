@@ -20,6 +20,19 @@ use rodio::{Decoder, Source};
 #[derive(Debug, Clone)]
 pub struct AcoustId(String);
 
+#[derive(Debug, Clone)]
+pub struct FileHash(String);
+impl Display for FileHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+impl AsRef<[u8]> for FileHash {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
 impl Display for AcoustId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -30,7 +43,7 @@ impl Display for AcoustId {
 pub struct Song {
     pub path: PathBuf,
     acoustid: Option<AcoustId>,
-    cache_acoustid: Option<Db>,
+    cache_acoustid: Db,
 }
 impl Display for Song {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -43,16 +56,21 @@ impl Song {
         Ok(Song {
             path: path.canonicalize()?.to_path_buf(),
             acoustid: None,
-            cache_acoustid: Db::new().ok(),
+            cache_acoustid: Db::new(),
         })
     }
 
     pub fn get_duration(&self) -> Result<Duration> {
-        // TODO: cache duration
+        let hash = self.hash()?;
+        if let Some(x) = self.cache_acoustid.get_duration(&hash) {
+            return Ok(x);
+        }
         eprintln!("FIX: yes get_duration is slower than necessary");
         let (sample_rate, channels, samples) = self.get_raw_samples()?;
         let seconds: u64 = samples.len() as u64 / channels as u64 / sample_rate as u64;
-        Ok(Duration::from_secs(seconds))
+        let res = Duration::from_secs(seconds);
+        self.cache_acoustid.insert_duration(&hash, res);
+        Ok(res)
     }
 
     pub fn get_raw_samples(&self) -> Result<(u32, u32, Vec<i16>)> {
@@ -69,10 +87,10 @@ impl Song {
         Ok((sample_rate, channels, decoder.collect()))
     }
 
-    fn hash(&self) -> Result<u64> {
+    fn hash(&self) -> Result<FileHash> {
         let data = fs::read(&self.path)?;
         let hasher: BuildHasherDefault<XxHash64> = Default::default();
-        Ok(hasher.hash_one(data))
+        Ok(FileHash(hasher.hash_one(data).to_string()))
     }
 
     pub fn calc_acoustid(&mut self) -> Result<AcoustId> {
@@ -93,11 +111,7 @@ impl Song {
 
     pub fn get_acoustid(&mut self) -> Result<AcoustId> {
         let hash = self.hash()?;
-        let acoustid = if let Some(cache) = &self.cache_acoustid {
-            cache.get_acoustid(&hash.to_string()).ok()
-        } else {
-            None
-        };
+        let acoustid = self.cache_acoustid.get_acoustid(&hash);
 
         match acoustid {
             Some(acoustid) => {
@@ -106,9 +120,7 @@ impl Song {
             }
             None => {
                 let acoustid = self.calc_acoustid()?;
-                if let Some(cache) = &self.cache_acoustid {
-                    cache.insert_acoustid(&hash.to_string(), acoustid.clone())?;
-                }
+                let _dont_care = self.cache_acoustid.insert_acoustid(&hash, acoustid.clone());
                 Ok(acoustid)
             }
         }

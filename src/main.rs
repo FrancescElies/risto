@@ -43,8 +43,6 @@ enum Commands {
         #[arg(value_name = "PATH")]
         music_dir: Option<PathBuf>,
     },
-    /// Removes files marked as not liked
-    RemoveDisliked {},
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -156,7 +154,6 @@ fn main() -> Result<()> {
         Commands::Listen { music_dir } => {
             classify_music(&skin, music_dir.as_ref())?;
         }
-        Commands::RemoveDisliked {} => todo!(),
     };
 
     Ok(())
