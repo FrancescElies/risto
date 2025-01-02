@@ -24,7 +24,20 @@ fn main() -> Result<()> {
 
     for file in mp3_files(path).iter() {
         eprintln!("File `{}`", file.display());
-        let song = acoustid::lookup_by_fingerprint(Song::new(file)?)?;
+        let song = match Song::new(file) {
+            Ok(it) => it,
+            Err(err) => {
+                eprintln!("ERR file: {} {err}", file.display());
+                continue;
+            }
+        };
+        let song = match acoustid::lookup_by_fingerprint(song) {
+            Ok(it) => it,
+            Err(err) => {
+                eprintln!("ERR fingerprint: {} {err}", file.display());
+                continue;
+            }
+        };
 
         eprintln!(
             "Most likely artist `{}` and tilte `{}`",
