@@ -74,7 +74,12 @@ pub fn rename_file_as_artist_dash_title(songfile: impl AsRef<Path>) -> Result<Pa
     ]
     .iter()
     .collect();
-    fs::rename(songfile, &newfile).with_context(|| "renaming failed")?;
+    fs::rename(&songfile, &newfile).with_context(|| "renaming failed")?;
+    println!(
+        "Renamed `{}` as `{}`",
+        songfile.as_ref().display(),
+        newfile.display()
+    );
 
     Ok(newfile)
 }
@@ -104,9 +109,7 @@ pub fn lookup_by_fingerprint(mut song: Song) -> Result<SongData> {
         ("meta", "recordings"),
     ]);
 
-    eprintln!(
-        "Request: {song} with duration {duration} seconds and acoustid {display_short_acoustid}"
-    );
+    eprintln!("Request: song with duration {duration} sec. and acoustid {display_short_acoustid}");
 
     let bytes = client
         .post(url)
@@ -114,7 +117,7 @@ pub fn lookup_by_fingerprint(mut song: Song) -> Result<SongData> {
         .send()?
         .error_for_status()?
         .bytes()?;
-    eprintln!("response bytes: {bytes:?}");
+    // eprintln!("response bytes: {bytes:?}");
     let json: Post =
         serde_json::from_slice(bytes.as_ref()).with_context(|| "unexpected response")?;
 

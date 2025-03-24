@@ -25,37 +25,34 @@ fn main() -> Result<()> {
         .with_context(|| format!("couldn't expand {}", &path.display()))?;
     let path = Path::new(path.as_ref());
 
-    for file in mp3_files(path).iter() {
-        eprintln!("File `{}`", file.display());
-        let song = match Song::new(file) {
-            Ok(it) => it,
-            Err(err) => {
-                eprintln!("ERR file: {} {err}", file.display());
-                continue;
-            }
-        };
-        let song_data = match acoustid::lookup_by_fingerprint(song) {
-            Ok(it) => it,
-            Err(err) => {
-                eprintln!("ERR fingerprint: {err} for `{}`", file.display());
-                continue;
-            }
-        };
-        match acoustid::write_song_data(file, &song_data) {
-            Ok(_) => {
-                match rename_file_as_artist_dash_title(file) {
-                    Ok(newfile) => {
-                        println!("Renamed `{}` as `{}`", file.display(), newfile.display());
-                    }
+    let (newfiles, errors): (Vec<_>, Vec<_>) = mp3_files(path)
+        .iter()
+        .map(|song| lookup_write_id3_and_rename_file(song))
+        // .collect::<Vec<Result<_>>>();
+        .partition(Result::is_ok);
 
-                    Err(_) => todo!(),
-                };
-            }
-            Err(e) => {
-                eprintln!("{}: {}", file.display(), e);
-            }
-        };
+    let newfiles: Vec<_> = newfiles.into_iter().map(Result::unwrap).collect();
+    let errors: Vec<_> = errors.into_iter().map(Result::unwrap_err).collect();
+
+    eprintln!("\n# Ok:");
+    for newfile in newfiles {
+        eprintln!("- {}", newfile.display());
+    }
+    eprintln!("\n# Errors:");
+    for err in errors {
+        eprintln!("- {err:?}");
     }
 
     Ok(())
+}
+
+fn lookup_write_id3_and_rename_file(file: &PathBuf) -> Result<PathBuf> {
+    eprintln!("\n# File `{}`", file.display());
+    let song = Song::new(file).with_context(|| ("❌ open song failed"))?;
+    let song_data = acoustid::lookup_by_fingerprint(song)
+        .with_context(|| "❌ fingerprint lookup failed: {err}")?;
+    let _ = acoustid::write_song_data(file, &song_data).with_context(|| "❌ write id3 failed")?;
+    let newfile =
+        rename_file_as_artist_dash_title(file).with_context(|| "❌ rename file failed")?;
+    Ok(newfile)
 }
