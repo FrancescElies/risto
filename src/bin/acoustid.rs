@@ -26,6 +26,10 @@ fn main() -> Result<()> {
         .with_context(|| format!("couldn't expand {}", &path.display()))?;
     let path = Path::new(path.as_ref());
 
+    let _ = std::env::var("ACOUSTID_API_KEY").with_context(|| {
+        "reading env var ACOUSTID_API_KEY, register app at https://acoustid.org/my-applications or use the same client as in examples at https://acoustid.org/webservice"
+    })?;
+
     let (newfiles, errors): (Vec<_>, Vec<_>) = mp3_files(path)
         .par_iter()
         .map(|song| lookup_write_id3_and_rename_file(song))
