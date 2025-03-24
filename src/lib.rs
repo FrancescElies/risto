@@ -88,7 +88,7 @@ impl Song {
                 .with_context(|| format!("opening song {:?}", self.path.clone()))?,
         );
         let decoder = Decoder::new(BufReader::new(file))
-            .with_context(|| format!("couldn't open song {self:?}"))?;
+            .with_context(|| format!("couldn't decode {}", self.path.display()))?;
 
         let sample_rate = decoder.sample_rate();
         let channels = decoder.channels().into();
