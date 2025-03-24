@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use rayon::prelude::*;
 use risto::{
     acoustid::{self, rename_file_as_artist_dash_title},
     mp3_files, Song,
@@ -26,7 +27,7 @@ fn main() -> Result<()> {
     let path = Path::new(path.as_ref());
 
     let (newfiles, errors): (Vec<_>, Vec<_>) = mp3_files(path)
-        .iter()
+        .par_iter()
         .map(|song| lookup_write_id3_and_rename_file(song))
         // .collect::<Vec<Result<_>>>();
         .partition(Result::is_ok);

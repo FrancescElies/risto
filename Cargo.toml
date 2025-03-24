@@ -21,6 +21,7 @@ sled = { version = "0.34.7", features = ["compression", "docs"] }
 directories = "5.0.1"
 trash = "5.2.1"
 id3 = "1.16.2"
+rayon = "1.10.0"
 
 [[bin]]
 name = "acoustid"
