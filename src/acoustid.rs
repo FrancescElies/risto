@@ -48,6 +48,7 @@ pub fn write_song_data(songfile: impl AsRef<Path>, new: &SongData) -> Result<()>
 
     tag.set_artist(new.artist.clone());
     tag.set_title(new.title.clone());
+    tag.set_album_artist(new.title.clone());
 
     tag.write_to_path(&songfile, Version::Id3v24)
         .with_context(|| format!("failed to write id3 tag"))
