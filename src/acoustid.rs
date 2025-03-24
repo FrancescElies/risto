@@ -4,6 +4,7 @@ use id3::{Tag, TagLike, Version};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
+    ffi::OsStr,
     fs,
     path::{Path, PathBuf},
 };
@@ -54,12 +55,9 @@ pub fn write_song_data(songfile: impl AsRef<Path>, new: &SongData) -> Result<()>
         .with_context(|| format!("failed to write id3 tag"))
 }
 
-pub fn rename_file_as_artist_dash_title(songfile: impl AsRef<Path>) -> Result<PathBuf> {
+pub fn rename_file_as_artist_dash_title(songfile: &Path) -> Result<PathBuf> {
     let tag = Tag::read_from_path(&songfile).with_context(|| "tag missing")?;
-    let dir = songfile
-        .as_ref()
-        .parent()
-        .with_context(|| "no parent dir")?;
+    let dir = songfile.parent().with_context(|| "no parent dir")?;
 
     let new_artist = tag.artist().with_context(|| "tag artist missing")?;
     let new_title = tag.title().with_context(|| "tag title missing")?;
@@ -67,7 +65,8 @@ pub fn rename_file_as_artist_dash_title(songfile: impl AsRef<Path>) -> Result<Pa
         return Err(anyhow!("file has tag but wither artist or title is empty"));
     }
 
-    let newfile: PathBuf = [
+    let extension = songfile.extension().unwrap_or(OsStr::new(""));
+    let mut newfile: PathBuf = [
         dir.to_str()
             .with_context(|| "song dir not unicode")?
             .to_owned(),
@@ -75,10 +74,11 @@ pub fn rename_file_as_artist_dash_title(songfile: impl AsRef<Path>) -> Result<Pa
     ]
     .iter()
     .collect();
+    newfile.set_extension(extension);
     fs::rename(&songfile, &newfile).with_context(|| "renaming failed")?;
     println!(
         "Renamed `{}` as `{}`",
-        songfile.as_ref().display(),
+        songfile.display(),
         newfile.display()
     );
 
