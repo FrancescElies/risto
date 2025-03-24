@@ -1,7 +1,8 @@
 use crate::Song;
 use anyhow::{anyhow, Context, Result};
+use id3::{Tag, TagLike, Version};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Artist {
@@ -38,6 +39,16 @@ pub struct SongData {
     pub artist: String,
 }
 
+pub fn write_song_data(songfile: impl AsRef<Path>, new: &SongData) -> Result<()> {
+    let mut tag = Tag::read_from_path(&songfile).unwrap_or(Tag::new());
+
+    tag.set_artist(new.artist.clone());
+    tag.set_title(new.title.clone());
+
+    tag.write_to_path(&songfile, Version::Id3v24)
+        .with_context(|| format!("failed to write id3 tag"))
+}
+
 pub fn lookup_by_fingerprint(mut song: Song) -> Result<SongData> {
     // API key https://acoustid.org/webservice#lookup
     let api_key = std::env::var("ACOUSTID_API_KEY").with_context(|| {
@@ -63,16 +74,19 @@ pub fn lookup_by_fingerprint(mut song: Song) -> Result<SongData> {
         ("meta", "recordings"),
     ]);
 
-    eprintln!("Sending request");
-    let req = client.post(url).form(&map);
     eprintln!(
         "Request: {song} with duration {duration} seconds and acoustid {display_short_acoustid}"
     );
 
-    let res = req.send()?.error_for_status()?;
-
-    let json: Post = res.json()?;
-    //eprintln!("Response: {:#?}", json);
+    let bytes = client
+        .post(url)
+        .form(&map)
+        .send()?
+        .error_for_status()?
+        .bytes()?;
+    eprintln!("response bytes: {bytes:?}");
+    let json: Post =
+        serde_json::from_slice(bytes.as_ref()).with_context(|| "unexpected response")?;
 
     let mut candidates = json.results;
     candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());

@@ -31,18 +31,24 @@ fn main() -> Result<()> {
                 continue;
             }
         };
-        let song = match acoustid::lookup_by_fingerprint(song) {
+        let song_data = match acoustid::lookup_by_fingerprint(song) {
             Ok(it) => it,
             Err(err) => {
-                eprintln!("ERR fingerprint: {} {err}", file.display());
+                eprintln!("ERR fingerprint: {err} for `{}`", file.display());
                 continue;
             }
         };
-
-        eprintln!(
-            "Most likely artist `{}` and tilte `{}`",
-            song.artist, song.title
-        );
+        match acoustid::write_song_data(file, &song_data) {
+            Ok(_) => {
+                println!(
+                    "Most likely artist `{}` and tilte `{}`",
+                    song_data.artist, song_data.title
+                );
+            }
+            Err(e) => {
+                eprintln!("{}: {}", file.display(), e);
+            }
+        };
     }
 
     Ok(())

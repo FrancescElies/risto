@@ -65,7 +65,7 @@ impl Song {
         if let Some(x) = self.cache_acoustid.get_duration(&hash) {
             return Ok(x);
         }
-        eprintln!("FIX: yes get_duration is slower than necessary");
+        // HACK: decoding samples to get song length https://github.com/RustAudio/rodio/issues/190
         let (sample_rate, channels, samples) = self.get_raw_samples()?;
         let seconds: u64 = samples.len() as u64 / channels as u64 / sample_rate as u64;
         let res = Duration::from_secs(seconds);
