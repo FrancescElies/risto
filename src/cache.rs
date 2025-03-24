@@ -38,7 +38,7 @@ impl Db {
         let key = key_duration!(key);
         let res = tree.get(&key).ok()??;
         let res = Duration::from_secs(u64::from_be_bytes(res.as_ref().try_into().ok()?));
-        eprintln!("cache-hit for key={key}, {res:?}");
+        // eprintln!("cache-hit for key={key}, {res:?}");
         Some(res)
     }
 
@@ -60,8 +60,8 @@ impl Db {
         let key = key_acoustid!(key);
         let res = tree.get(&key).ok()??;
         let res = std::str::from_utf8(res.as_ref()).unwrap().to_string();
-        let short_id: String = res.chars().take(10).collect();
-        eprintln!("cache-hit for key={key}, {short_id}...");
+        // let short_id: String = res.chars().take(10).collect();
+        // eprintln!("cache-hit for key={key}, {short_id}...");
         Some(AcoustId(res))
     }
 
