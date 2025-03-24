@@ -1,5 +1,8 @@
 use anyhow::{Context, Result};
-use risto::{acoustid, mp3_files, Song};
+use risto::{
+    acoustid::{self, rename_file_as_artist_dash_title},
+    mp3_files, Song,
+};
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
@@ -40,10 +43,13 @@ fn main() -> Result<()> {
         };
         match acoustid::write_song_data(file, &song_data) {
             Ok(_) => {
-                println!(
-                    "Most likely artist `{}` and tilte `{}`",
-                    song_data.artist, song_data.title
-                );
+                match rename_file_as_artist_dash_title(file) {
+                    Ok(newfile) => {
+                        println!("Renamed `{}` as `{}`", file.display(), newfile.display());
+                    }
+
+                    Err(_) => todo!(),
+                };
             }
             Err(e) => {
                 eprintln!("{}: {}", file.display(), e);

@@ -2,7 +2,11 @@ use crate::Song;
 use anyhow::{anyhow, Context, Result};
 use id3::{Tag, TagLike, Version};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Artist {
@@ -47,6 +51,32 @@ pub fn write_song_data(songfile: impl AsRef<Path>, new: &SongData) -> Result<()>
 
     tag.write_to_path(&songfile, Version::Id3v24)
         .with_context(|| format!("failed to write id3 tag"))
+}
+
+pub fn rename_file_as_artist_dash_title(songfile: impl AsRef<Path>) -> Result<PathBuf> {
+    let tag = Tag::read_from_path(&songfile).with_context(|| "tag missing")?;
+    let dir = songfile
+        .as_ref()
+        .parent()
+        .with_context(|| "no parent dir")?;
+
+    let new_artist = tag.artist().with_context(|| "tag artist missing")?;
+    let new_title = tag.title().with_context(|| "tag title missing")?;
+    if new_artist.trim() == "" || new_title == "" {
+        return Err(anyhow!("file has tag but wither artist or title is empty"));
+    }
+
+    let newfile: PathBuf = [
+        dir.to_str()
+            .with_context(|| "song dir not unicode")?
+            .to_owned(),
+        format!("{} - {}", new_artist, new_title),
+    ]
+    .iter()
+    .collect();
+    fs::rename(songfile, &newfile).with_context(|| "renaming failed")?;
+
+    Ok(newfile)
 }
 
 pub fn lookup_by_fingerprint(mut song: Song) -> Result<SongData> {
