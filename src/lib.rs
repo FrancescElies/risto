@@ -2,6 +2,7 @@ pub mod acoustid;
 mod cache;
 
 use cache::Db;
+use clap::builder::OsStr;
 use twox_hash::XxHash64;
 use walkdir::WalkDir;
 
@@ -45,9 +46,17 @@ pub struct Song {
     acoustid: Option<AcoustId>,
     cache_acoustid: Db,
 }
+
 impl Display for Song {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Song at {}", self.path.display())
+        write!(
+            f,
+            "Song-name {}",
+            self.path
+                .file_name()
+                .unwrap_or(&OsStr::from("<unkown-file>"))
+                .to_string_lossy()
+        )
     }
 }
 
