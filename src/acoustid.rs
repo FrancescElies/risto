@@ -45,23 +45,23 @@ pub struct SongData {
 }
 
 pub fn write_song_data(songfile: impl AsRef<Path>, new: &SongData) -> Result<()> {
-    let mut tag = Tag::read_from_path(&songfile).unwrap_or(Tag::new());
+    let mut tag = Tag::read_from_path(&songfile).unwrap_or_default();
 
     tag.set_artist(new.artist.clone());
     tag.set_title(new.title.clone());
     tag.set_album_artist(new.title.clone());
 
     tag.write_to_path(&songfile, Version::Id3v24)
-        .with_context(|| format!("failed to write id3 tag"))
+        .with_context(|| "failed to write id3 tag")
 }
 
 pub fn rename_file_as_artist_dash_title(songfile: &Path) -> Result<PathBuf> {
-    let tag = Tag::read_from_path(&songfile).with_context(|| "tag missing")?;
+    let tag = Tag::read_from_path(songfile).with_context(|| "tag missing")?;
     let dir = songfile.parent().with_context(|| "no parent dir")?;
 
     let new_artist = tag.artist().with_context(|| "tag artist missing")?;
     let new_title = tag.title().with_context(|| "tag title missing")?;
-    if new_artist.trim() == "" || new_title == "" {
+    if new_artist.trim().is_empty() || new_title.is_empty() {
         return Err(anyhow!("file has tag but wither artist or title is empty"));
     }
 
@@ -75,7 +75,7 @@ pub fn rename_file_as_artist_dash_title(songfile: &Path) -> Result<PathBuf> {
     .iter()
     .collect();
     newfile.set_extension(extension);
-    fs::rename(&songfile, &newfile).with_context(|| "renaming failed")?;
+    fs::rename(songfile, &newfile).with_context(|| "renaming failed")?;
     println!(
         "Renamed `{}` as `{}`",
         songfile.display(),
