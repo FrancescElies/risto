@@ -20,8 +20,8 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(name = "risto")]
 #[command(
-    about = "Classify music stop at any time and continue later on.",
-    long_about = "Saves results to likes.json, later on you can process the json e.g. remove files you didn't like."
+    about = "Remove music one file at a time or rename files",
+    long_about = ""
 )]
 struct Cli {
     #[command(subcommand)]
@@ -39,7 +39,6 @@ enum Commands {
         music_dir: Option<PathBuf>,
     },
     /// Rename music files with lookup acoustid id3
-    #[command(arg_required_else_help = true)]
     RenameFiles {
         /// Path to folder with music
         #[arg(value_name = "PATH")]
