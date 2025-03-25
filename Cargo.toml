@@ -6,20 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.80"
-clap = { version =  "4.5.1", features = ["derive"] }
-rodio = { version = "0.17.3", features = ["symphonia", "symphonia-all"]}
+anyhow = "1.0.97"
+clap = { version =  "4.5.32", features = ["derive"] }
+rodio = { version = "0.20.1", features = ["symphonia", "symphonia-all"]}
 chromaprint_native = { git = "https://github.com/0xcaff/rust-chromaprint-native" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 shellexpand = "3.1.0"
-termimad = "0.29.2"
-twox-hash = "1.6.3"
-walkdir = "2.4.0"
-reqwest = { version = "0.12.11", features = ["blocking", "json"] }
+termimad = "0.31.2"
+twox-hash = "2.1.0"
+walkdir = "2.5.0"
+reqwest = { version = "0.12.15", features = ["blocking", "json"] }
 sled = { version = "0.34.7", features = ["compression", "docs"] }
-directories = "5.0.1"
-trash = "5.2.1"
+directories = "6.0.0"
+trash = "5.2.2"
 id3 = "1.16.2"
 rayon = "1.10.0"
 

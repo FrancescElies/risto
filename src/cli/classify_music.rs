@@ -10,7 +10,7 @@ use std::{
     thread,
     time::Duration,
 };
-use termimad::{ask, mad_print_inline, Answer, MadSkin, Question};
+use termimad::{ask, mad_print_inline, MadSkin};
 
 use anyhow::{Context, Result};
 
