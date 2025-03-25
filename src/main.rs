@@ -3,10 +3,7 @@
 
 mod cli;
 use anyhow::{Context, Result};
-use cli::{
-    classify_music, read_files_from_stdin, rename_music_files::lookup_write_id3_and_rename_file,
-};
-use rayon::prelude::*;
+use cli::{classify_music, read_files_from_stdin, rename_music_files};
 use risto::mp3_files;
 use std::path::{Path, PathBuf};
 use termimad::{
@@ -61,31 +58,6 @@ fn shellexpand_or_read_files_from_stdin(path: Option<&Path>) -> Result<Vec<PathB
         None => Ok(read_files_from_stdin()),
     }
 }
-fn rename_files(files: &Vec<PathBuf>) -> Result<()> {
-    let _ = std::env::var("ACOUSTID_API_KEY").with_context(|| {
-        "reading env var ACOUSTID_API_KEY, register app at https://acoustid.org/my-applications or use the same client as in examples at https://acoustid.org/webservice"
-    })?;
-
-    let (newfiles, errors): (Vec<_>, Vec<_>) = files
-        .par_iter()
-        .map(lookup_write_id3_and_rename_file)
-        // .collect::<Vec<Result<_>>>();
-        .partition(Result::is_ok);
-
-    let newfiles: Vec<_> = newfiles.into_iter().map(Result::unwrap).collect();
-    let errors: Vec<_> = errors.into_iter().map(Result::unwrap_err).collect();
-
-    eprintln!("\n# Ok:");
-    for newfile in newfiles {
-        eprintln!("- {}", newfile.display());
-    }
-    eprintln!("\n# Errors:");
-    for err in errors {
-        eprintln!("- {err:?}");
-    }
-
-    Ok(())
-}
 
 fn main() -> Result<()> {
     let mut skin = MadSkin::default();
@@ -106,7 +78,16 @@ fn main() -> Result<()> {
         }
         Commands::RenameFiles { path } => {
             let files = shellexpand_or_read_files_from_stdin(path.as_deref())?;
-            rename_files(&files)?;
+            let (newfiles, errors) = rename_music_files::as_title_artist(&files)?;
+
+            eprintln!("\n# Ok:");
+            for newfile in newfiles {
+                eprintln!("- {}", newfile.display());
+            }
+            eprintln!("\n# Errors:");
+            for err in errors {
+                eprintln!("- {err:?}");
+            }
         }
     };
 
