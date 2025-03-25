@@ -75,7 +75,10 @@ fn play(skin: &MadSkin, path: &Path) -> Result<Like> {
         // Play the MP3 file
         let decoder = match Decoder::new(BufReader::new(file)) {
             Ok(x) => x,
-            Err(_) => return,
+            Err(e) => {
+                eprintln!("# audio decoder: {e:?}");
+                return;
+            }
         };
         // let id = acoustid::sim_hash(&path);
         // let source = source.take_duration(Duration::from_secs(5));
@@ -90,7 +93,7 @@ fn play(skin: &MadSkin, path: &Path) -> Result<Like> {
                     return;
                 }
                 Err(_e) => {
-                    // println!("error rx {_e:#?}");
+                    eprintln!("rx timeout: {_e:#?}");
                 }
             }
         }

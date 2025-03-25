@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.80"
 clap = { version =  "4.5.1", features = ["derive"] }
-rodio = "0.17.3"
+rodio = { version = "0.17.3", features = ["symphonia", "symphonia-all"]}
 chromaprint_native = { git = "https://github.com/0xcaff/rust-chromaprint-native" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

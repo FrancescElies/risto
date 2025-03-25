@@ -118,7 +118,7 @@ pub fn lookup_by_fingerprint(mut song: Song) -> Result<SongData> {
         .send()?
         .error_for_status()?
         .bytes()?;
-    // eprintln!("response bytes: {bytes:?}");
+    eprintln!("response bytes: {bytes:?}");
     let json: Post =
         serde_json::from_slice(bytes.as_ref()).with_context(|| "unexpected response")?;
 
