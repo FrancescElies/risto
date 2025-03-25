@@ -16,7 +16,7 @@ use clap::Parser;
 /// Saves results to likes.json, later on you can process the json e.g. remove files you didn't like.
 #[derive(Parser)]
 struct Cli {
-    /// file or folder to calculate acoustid
+    /// file or folder to calculate acoustid or instead a list of files via STDIN
     path: Option<PathBuf>,
 }
 
