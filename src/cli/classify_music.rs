@@ -92,9 +92,7 @@ fn play(skin: &MadSkin, path: &Path) -> Result<Like> {
                     sink.stop();
                     return;
                 }
-                Err(_e) => {
-                    eprintln!("rx timeout: {_e:#?}");
-                }
+                Err(_) => {}
             }
         }
 
