@@ -86,13 +86,10 @@ fn play(skin: &MadSkin, path: &Path) -> Result<Like> {
 
         // while song playing
         while sink.len() != 0 {
-            match rx_stop_song.recv_timeout(Duration::from_secs(5)) {
-                Ok(_) => {
-                    // on user input
-                    sink.stop();
-                    return;
-                }
-                Err(_) => {}
+            if rx_stop_song.recv_timeout(Duration::from_secs(5)).is_ok() {
+                // on user input
+                sink.stop();
+                return;
             }
         }
 

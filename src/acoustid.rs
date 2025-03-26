@@ -75,7 +75,7 @@ pub fn rename_file_as_artist_dash_title(songfile: &Path) -> Result<PathBuf> {
     .iter()
     .collect();
     newfile.set_extension(extension);
-    if !songfile.starts_with(newfile) {
+    if songfile.canonicalize()? != newfile.canonicalize()? {
         fs::rename(songfile, &newfile).with_context(|| "renaming failed")?;
     }
     println!(
